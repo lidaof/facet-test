@@ -1,0 +1,19 @@
+.App {
+  text-align: center;
+}
+
+.facet-container {
+  display: grid;
+  grid-template-columns: auto;
+}
+
+.facet-config {
+  display: grid;
+  grid-template-columns: auto auto;
+}
+
+.facet-content {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  justify-items: center;
+}
