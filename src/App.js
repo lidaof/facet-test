@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import './App.css';
 import axios from 'axios';
 
-
 const DEFAULT_ROW = 'Sample';
 const DEFAULT_COLUMN = 'Assay';
 
@@ -11,72 +10,117 @@ class App extends Component {
         super(props);
         this.state = {
             data: [],
-             
+            rowList: [], // object contains row elements {name: 'Sample', expanded: false, children: []}
+            columnList: [],
+            parent2children: {},
         };
         //this.fillMetadata = this.fillMetadata.bind(this);
+        this.toggleHeader = this.toggleHeader.bind(this);
+        this.renderHeader = this.renderHeader.bind(this);
     }
 
     componentDidMount() {
         axios.get('https://wangftp.wustl.edu/~dli/tmp/test2.json').then(res => {
-            this.setState({ data: res.data });
+            //this.setState({ data: res.data });
             //this.fillMetadata(res.data);
-        });
-    }
-
-
-    render(){
-        const { data } = this.state;
-        if (!data.length) {
-            return <p>Loading</p>;
-        } else {
-            const metaKeys = Object.keys(data[0].metadata);
-            console.log(metaKeys);
-            const parent2children = {} //key: parent terms, value: set of [child terms]
-            for (let meta of metaKeys){
+            const metaKeys = Object.keys(res.data[0].metadata);
+            //console.log(metaKeys);
+            const parent2children = {}; //key: parent terms, value: set of [child terms]
+            for (let meta of metaKeys) {
                 parent2children[meta] = new Set();
             }
-            for (let track of data){
-                console.log(track);
-                for (let metaKey of metaKeys){
-                    const metaValue = track.metadata.metaKey;
-                    if (Array.isArray(metaValue) ) {
+            for (let track of res.data) {
+                for (let metaKey of metaKeys) {
+                    const metaValue = track.metadata[metaKey];
+                    //console.log(metaValue);
+                    if (Array.isArray(metaValue)) {
                         //array metadata, also need check length
                         if (metaValue.length > 1) {
                             //need loop over the array, constuct new key in parent2children hash
-                            for ( let [idx,ele] of metaValue.entries() ){
-                                if(idx < metaValue.length - 1) {
-                                    if (!parent2children[ele]){
-                                        parent2children[ele] = new Set(); 
+                            for (let [idx, ele] of metaValue.entries()) {
+                                if (idx < metaValue.length - 1) {
+                                    if (!parent2children[ele]) {
+                                        parent2children[ele] = new Set();
                                     }
-                                    parent2children[ele].add(metaValue[idx+1]);
+                                    parent2children[ele].add(metaValue[idx + 1]);
                                 }
                             }
-                        } else {                            
+                        } else {
                         }
                         parent2children[metaKey].add(metaValue[0]);
                     } else {
                         //string metadata
-                        parent2children[metaKey].add(metaValue)
+                        parent2children[metaKey].add(metaValue);
                     }
-                }  
+                }
             }
-            console.log(parent2children);
+            //console.log(parent2children);
+            this.setState({
+                rowList: [{ name: 'Sample', expanded: false, children: parent2children['Sample'] }],
+                columnList: [{ name: 'Assay', expanded: false, children: parent2children['Assay'] }],
+                data: res.data,
+                parent2children,
+            });
+        });
+    }
+
+    toggleHeader(e) {
+        console.log(e.currentTarget.name);
+    }
+
+    renderHeader(attr) {
+        let attrList;
+        if (attr === 'Sample') {
+            attrList = this.state.rowList;
+        } else {
+            attrList = this.state.columnList;
+        }
+        let divList = [];
+        for (let element of attrList) {
+            let prefix;
+            if (element.children.size) {
+                if (element.expanded) {
+                    prefix = '⊟';
+                } else {
+                    prefix = '⊞';
+                }
+            } else {
+                prefix = '';
+            }
+            divList.push(
+            <div>
+                <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
+            </div> 
+            );
+        }
+        return divList;
+    }
+
+
+
+    render() {
+        const { data } = this.state;
+        if (!data.length) {
+            return <p>Loading</p>;
+        } else {
+
+            //fill in rowList and columnList
             return (
                 <div className="facet-container">
                     <div className="facet-config">
-                        <div>Row: <button>{DEFAULT_ROW}</button></div>
-                        <div>Column: <button>{DEFAULT_COLUMN}</button></div>
+                        <div>
+                            Row: <button>{DEFAULT_ROW}</button>
+                        </div>
+                        <div>
+                            Column: <button>{DEFAULT_COLUMN}</button>
+                        </div>
                     </div>
                     <div className="facet-content">
                         <div className="facet-swap">
                             <button title="swap row/column">&#8646;</button>
                         </div>
-                        <div className="facet-column-header">
-                            {DEFAULT_COLUMN}
-                        </div>
-                        <div className="facet-row-header">
-                            {DEFAULT_ROW}
-                        </div>
+                        <div className="facet-column-header">{this.renderHeader('Assay')}</div>
+                        <div className="facet-row-header">{this.renderHeader('Sample')}</div>
                         <div className="facet-table">
                             <span>0</span> / <span>{data.length}</span>
                         </div>
@@ -84,7 +128,6 @@ class App extends Component {
                 </div>
             );
         }
-        
     }
 
     // async fillMetadata(data) {
