@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import axios from 'axios';
+import _ from 'lodash';
 
 const DEFAULT_ROW = 'Sample';
 const DEFAULT_COLUMN = 'Assay';
@@ -66,6 +67,33 @@ class App extends Component {
 
     toggleHeader(e) {
         console.log(e.currentTarget.name);
+        const {name} = e.currentTarget;
+        let attrList;
+        if (name === 'Sample') {
+            attrList = this.state.rowList;
+        } else {
+            attrList = this.state.columnList;
+        }
+        const index = _.findIndex(attrList, ['name', name]);
+        const isExpanded = !attrList[index].expanded;
+        const newAttr = {...attrList[index], expanded: isExpanded}
+        let newList = [...attrList];
+        newList[index] = newAttr;
+        if (isExpanded){
+            for (let item of this.state.parent2children[name]){
+                newList.push({ name: item, expanded: false, children: this.state.parent2children[item] })
+            }
+        }else {
+            newList = [...newList.slice(0, index+1), ...newList.slice(index + 1 + this.state.parent2children[name].size)];
+        }
+        console.log(newList);
+        if (name === 'Sample') {
+            this.setState({rowList: newList});
+        } else {
+            this.setState({columnList: newList});
+        }
+        
+
     }
 
     renderHeader(attr) {
@@ -78,7 +106,7 @@ class App extends Component {
         let divList = [];
         for (let element of attrList) {
             let prefix;
-            if (element.children.size) {
+            if (element.children && element.children.size) {
                 if (element.expanded) {
                     prefix = '⊟';
                 } else {
@@ -87,11 +115,20 @@ class App extends Component {
             } else {
                 prefix = '';
             }
-            divList.push(
-            <div>
-                <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
-            </div> 
-            );
+            if (prefix) {
+                divList.push(
+                    <div key={element.name}>
+                        <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
+                    </div> 
+                    );
+            } else {
+                divList.push(
+                    <div key={element.name}>
+                        <button name={element.name} type="button">{prefix}{element.name}</button>
+                    </div> 
+                    );
+            }
+            
         }
         return divList;
     }
