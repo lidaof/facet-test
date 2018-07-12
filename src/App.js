@@ -18,6 +18,7 @@ class App extends Component {
         //this.fillMetadata = this.fillMetadata.bind(this);
         this.toggleHeader = this.toggleHeader.bind(this);
         this.renderHeader = this.renderHeader.bind(this);
+        this.removeChild = this.removeChild.bind(this);
     }
 
     componentDidMount() {
@@ -74,17 +75,22 @@ class App extends Component {
         } else {
             attrList = this.state.columnList;
         }
+        console.log(attrList);
         const index = _.findIndex(attrList, ['name', name]);
+        console.log(index);
+        console.log(attrList[index]);
         const isExpanded = !attrList[index].expanded;
         const newAttr = {...attrList[index], expanded: isExpanded}
         let newList = [...attrList];
         newList[index] = newAttr;
         if (isExpanded){
             for (let item of this.state.parent2children[name]){
-                newList.push({ name: item, expanded: false, children: this.state.parent2children[item] })
+                newList.splice(index+1, 0, { name: item, expanded: false, children: this.state.parent2children[item] })
             }
         }else {
             newList = [...newList.slice(0, index+1), ...newList.slice(index + 1 + this.state.parent2children[name].size)];
+            //remove all child items, recursive
+            this.removeChild(newList, name);
         }
         console.log(newList);
         if (name === 'Sample') {
@@ -96,6 +102,17 @@ class App extends Component {
 
     }
 
+    removeChild(list, parentName){
+        console.log(list);
+        if (this.state.parent2children[parentName]) {
+            for (let item of this.state.parent2children[parentName]){
+                _.remove(list, function(n) {return n.name === item});
+                this.removeChild(list, item);
+            }
+        }
+        return list;
+    }
+
     renderHeader(attr) {
         let attrList;
         if (attr === 'Sample') {
@@ -104,7 +121,7 @@ class App extends Component {
             attrList = this.state.columnList;
         }
         let divList = [];
-        for (let element of attrList) {
+        for (let [idx,element] of attrList.entries()) {
             let prefix;
             if (element.children && element.children.size) {
                 if (element.expanded) {
@@ -115,16 +132,17 @@ class App extends Component {
             } else {
                 prefix = '';
             }
+            let key=`${element}-${idx}`;
             if (prefix) {
                 divList.push(
-                    <div key={element.name}>
+                    <div key={key}>
                         <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
                     </div> 
                     );
             } else {
                 divList.push(
-                    <div key={element.name}>
-                        <button name={element.name} type="button">{prefix}{element.name}</button>
+                    <div key={key}>
+                        <div name={element.name}>{prefix}{element.name}</div >
                     </div> 
                     );
             }
@@ -162,6 +180,7 @@ class App extends Component {
                             <span>0</span> / <span>{data.length}</span>
                         </div>
                     </div>
+                    <div></div>
                 </div>
             );
         }
