@@ -14,11 +14,15 @@ class App extends Component {
             rowList: [], // object contains row elements {name: 'Sample', expanded: false, children: []}
             columnList: [],
             parent2children: {},
+            child2ancestor: {}, // child to top most parent hash
+            rowHeader: DEFAULT_ROW,
+            columnHeader: DEFAULT_COLUMN,
         };
         //this.fillMetadata = this.fillMetadata.bind(this);
         this.toggleHeader = this.toggleHeader.bind(this);
         this.renderHeader = this.renderHeader.bind(this);
         this.removeChild = this.removeChild.bind(this);
+        this.swapHeader = this.swapHeader.bind(this);
     }
 
     componentDidMount() {
@@ -26,15 +30,15 @@ class App extends Component {
             //this.setState({ data: res.data });
             //this.fillMetadata(res.data);
             const metaKeys = Object.keys(res.data[0].metadata);
-            //console.log(metaKeys);
             const parent2children = {}; //key: parent terms, value: set of [child terms]
+            const child2ancestor = {};
             for (let meta of metaKeys) {
                 parent2children[meta] = new Set();
+                child2ancestor[meta] = meta; // add 'sample': sample as well
             }
             for (let track of res.data) {
                 for (let metaKey of metaKeys) {
                     const metaValue = track.metadata[metaKey];
-                    //console.log(metaValue);
                     if (Array.isArray(metaValue)) {
                         //array metadata, also need check length
                         if (metaValue.length > 1) {
@@ -45,32 +49,37 @@ class App extends Component {
                                         parent2children[ele] = new Set();
                                     }
                                     parent2children[ele].add(metaValue[idx + 1]);
+                                    child2ancestor[ele] = metaKey;
                                 }
                             }
-                        } else {
                         }
                         parent2children[metaKey].add(metaValue[0]);
+                        child2ancestor[metaValue[0]] = metaKey;
                     } else {
                         //string metadata
                         parent2children[metaKey].add(metaValue);
+                        child2ancestor[metaValue] = metaKey;
                     }
                 }
             }
             //console.log(parent2children);
             this.setState({
-                rowList: [{ name: 'Sample', expanded: false, children: parent2children['Sample'] }],
-                columnList: [{ name: 'Assay', expanded: false, children: parent2children['Assay'] }],
+                rowList: [{ name: this.state.rowHeader, expanded: false, children: parent2children[this.state.rowHeader] }],
+                columnList: [{ name: this.state.columnHeader, expanded: false, children: parent2children[this.state.columnHeader] }],
                 data: res.data,
                 parent2children,
+                child2ancestor,
+                rowHeader: metaKeys[1],
+                columnHeader: metaKeys[2],
             });
         });
     }
 
     toggleHeader(e) {
-        console.log(e.currentTarget.name);
         const {name} = e.currentTarget;
+        console.log(name);
         let attrList;
-        if (name === 'Sample') {
+        if (this.state.child2ancestor[name] === this.state.rowHeader) {
             attrList = this.state.rowList;
         } else {
             attrList = this.state.columnList;
@@ -93,7 +102,7 @@ class App extends Component {
             this.removeChild(newList, name);
         }
         console.log(newList);
-        if (name === 'Sample') {
+        if (this.state.child2ancestor[name] === this.state.rowHeader) {
             this.setState({rowList: newList});
         } else {
             this.setState({columnList: newList});
@@ -115,7 +124,7 @@ class App extends Component {
 
     renderHeader(attr) {
         let attrList;
-        if (attr === 'Sample') {
+        if (attr === this.state.rowHeader) {
             attrList = this.state.rowList;
         } else {
             attrList = this.state.columnList;
@@ -142,7 +151,7 @@ class App extends Component {
             } else {
                 divList.push(
                     <div key={key}>
-                        <div name={element.name}>{prefix}{element.name}</div >
+                        <div name={element.name}>{prefix}{element.name}</div>
                     </div> 
                     );
             }
@@ -151,7 +160,12 @@ class App extends Component {
         return divList;
     }
 
-
+    swapHeader() {
+        let {rowHeader, columnHeader, rowList, columnList} = this.state;
+        [rowHeader, columnHeader] = [columnHeader, rowHeader];
+        [rowList, columnList] = [columnList, rowList];
+        this.setState({rowHeader, columnHeader, rowList, columnList});
+    }
 
     render() {
         const { data } = this.state;
@@ -172,10 +186,10 @@ class App extends Component {
                     </div>
                     <div className="facet-content">
                         <div className="facet-swap">
-                            <button title="swap row/column">&#8646;</button>
+                            <button title="swap row/column" onClick={this.swapHeader}>&#8646;</button>
                         </div>
-                        <div className="facet-column-header">{this.renderHeader('Assay')}</div>
-                        <div className="facet-row-header">{this.renderHeader('Sample')}</div>
+                        <div className="facet-column-header">{this.renderHeader(this.state.columnHeader)}</div>
+                        <div className="facet-row-header">{this.renderHeader(this.state.rowHeader)}</div>
                         <div className="facet-table">
                             <span>0</span> / <span>{data.length}</span>
                         </div>
