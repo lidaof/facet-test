@@ -1,3 +1,7 @@
+:root {
+  --colNum: 1;
+}
+
 .App {
   text-align: center;
   box-sizing: border-box;
@@ -40,4 +44,8 @@
 .facet-row-header {
   display: grid;
   grid-template-columns: auto;
+}
+
+.facet-table {
+  grid-template-columns: var(--colNum);
 }

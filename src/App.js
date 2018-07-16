@@ -141,16 +141,15 @@ class App extends Component {
             } else {
                 prefix = '';
             }
-            let key=`${element}-${idx}`;
             if (prefix) {
                 divList.push(
-                    <div key={key}>
+                    <div key={`${element}-${idx}`}>
                         <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
                     </div> 
                     );
             } else {
                 divList.push(
-                    <div key={key}>
+                    <div key={`${element}-${idx}`}>
                         <div name={element.name}>{prefix}{element.name}</div>
                     </div> 
                     );
@@ -160,11 +159,48 @@ class App extends Component {
         return divList;
     }
 
+    /**
+     * swap the column and row
+     */
     swapHeader() {
         let {rowHeader, columnHeader, rowList, columnList} = this.state;
         [rowHeader, columnHeader] = [columnHeader, rowHeader];
         [rowList, columnList] = [columnList, rowList];
         this.setState({rowHeader, columnHeader, rowList, columnList});
+        this.buildMatrix();
+    }
+    /**
+     * build the matrix, actually list of divs, use grid to control layout
+     */
+    buildMatrix() {
+        let divs = [];
+        for (let row of this.state.rowList) {
+            for (let col of this.state.columnList) {
+                if (row.isExpanded || col.isExpanded) {
+                    divs.push( <div key={`${row.name}-${col.name}`}></div> );
+                }
+                divs.push(<div key={`${row.name}-${col.name}`}>{this.countTracks(row, col)}</div> );
+            }
+        }
+        return divs;
+    }
+
+    /**
+     * 
+     * @param {onject} row 
+     * @param {object} col 
+     * @return {number} how many tracks belong to the row and col combination
+     */
+    countTracks(row, col) {
+        let num = 0;
+        for (let track of this.state.data){
+            if (row.name === this.state.rowHeader || track.metadata[this.state.rowHeader].includes(row.name)) {
+                if (col.name === this.state.columnHeader || track.metadata[this.state.columnHeader].includes(col.name)) {
+                    num += 1;
+                }
+            }
+        }
+        return num;
     }
 
     render() {
@@ -191,7 +227,7 @@ class App extends Component {
                         <div className="facet-column-header">{this.renderHeader(this.state.columnHeader)}</div>
                         <div className="facet-row-header">{this.renderHeader(this.state.rowHeader)}</div>
                         <div className="facet-table">
-                            <span>0</span> / <span>{data.length}</span>
+                            {this.buildMatrix()}
                         </div>
                     </div>
                     <div></div>
