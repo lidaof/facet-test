@@ -1,5 +1,5 @@
 :root {
-  --colNum: 1;
+  --colNum: 2;
 }
 
 .App {
@@ -10,8 +10,6 @@
 .facet-container {
   display: grid;
   grid-template-columns: auto auto 1fr;
-  border: 2px solid #f76707;
-  border-radius: 5px;
   background-color: #fff4e6;
   margin-top: 100px;
 }
@@ -23,28 +21,26 @@
 
 .facet-content {
   display: grid;
-  grid-template-columns: auto auto;
-  /* justify-items: center; */
-  grid-gap: 10px;
+  grid-gap: 2px;
+  grid-template-columns: repeat(var(--colNum), 1fr);
+  grid-auto-flow: row dense;
 }
 
 
 .facet-content  div {
-  border: 2px solid #ffa94d;
-  border-radius: 5px;
-  background-color: #ffd8a8;
-  color: #d9480f;
+  border: 1px solid #ffa94d;
+  
 }
 
-.facet-column-header {
+/* .facet-column-header {
   display: grid;
   grid-template-rows: 100%;
   grid-auto-flow: column;
 }
 
 .facet-column-header > div {
-  transform-origin: 50% 50%;
   transform: rotate(-45deg) translateX(50%);
+  width: 50px;
 }
 
 .facet-row-header {
@@ -52,7 +48,22 @@
   grid-template-columns: auto;
 }
 
-.facet-table {
-  display: grid;
-  grid-template-columns: repeat(var(--colNum), auto);
+.facet-row-header > div {
+  min-height: 1rem;
+} */
+
+/* 
+.facet-table > div {
+  width: 50px;
+  min-height: 1rem;
+} */
+
+.facet-swap {
+  grid-column-start: 1;
+  grid-column-end: 2;
+}
+
+.facet-row-header {
+  grid-column-start: 1;
+  grid-column-end: 2;
 }

@@ -128,7 +128,6 @@ class App extends Component {
         } else {
             this.setState({columnList: newList});
         }
-        this.buildMatrix();
         this.setColNumber();
 
     }
@@ -145,9 +144,10 @@ class App extends Component {
     }
 
     renderHeader(attr) {
-        let attrList;
+        let attrList, rowClass='';
         if (attr === this.state.rowHeader) {
             attrList = this.state.rowList;
+            rowClass = 'facet-row-header';
         } else {
             attrList = this.state.columnList;
         }
@@ -165,19 +165,20 @@ class App extends Component {
             }
             if (prefix) {
                 divList.push(
-                    <div key={`${element.name}-${idx}`}>
+                    <div key={`${element.name}-${idx}`} className={rowClass}>
                         <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
                     </div> 
                     );
             } else {
                 divList.push(
-                    <div key={`${element.name}-${idx}`}>
+                    <div key={`${element.name}-${idx}`} className={rowClass}>
                         <div name={element.name}>{prefix}{element.name}</div>
                     </div> 
                     );
             }
             
         }
+        //console.log(divList);
         return divList;
     }
 
@@ -186,6 +187,9 @@ class App extends Component {
      */
     swapHeader() {
         let {rowHeader, columnHeader, rowList, columnList} = this.state;
+        if(columnHeader === 'notuse'){
+            return;
+        }
         [rowHeader, columnHeader] = [columnHeader, rowHeader];
         [rowList, columnList] = [columnList, rowList];
         this.setState({rowHeader, columnHeader, rowList, columnList});
@@ -197,7 +201,7 @@ class App extends Component {
      */
     buildMatrix() {
         let divs = [];
-        if (this.state.columnList.length) {
+        if (this.state.columnHeader !== 'notuse') {
             for (let row of this.state.rowList) {
                 for (let col of this.state.columnList) {
                     if (row.expanded || col.expanded) {
@@ -210,14 +214,14 @@ class App extends Component {
         } else {
             for (let row of this.state.rowList) {
                 if (row.expanded) {
-                    divs.push( <div key={`${row.name-"col"}`}></div> );
+                    divs.push( <div key={`${row.name}-col}`}></div> );
                 } else {
-                    divs.push(<div key={`${row.name}-"col"`}>{this.countTracks(row, '')}</div> );
+                    divs.push(<div key={`${row.name}-col`}>{this.countTracks(row, 'notuse')}</div> );
                 }
         }
         }
         
-        console.log(divs);
+        //console.log(divs);
         return divs;
     }
 
@@ -231,8 +235,13 @@ class App extends Component {
         let tracks = [];
         for (let track of this.state.data){
             if (row.name === this.state.rowHeader || track.metadata[this.state.rowHeader].includes(row.name)) {
-                if (col && ( col.name === this.state.columnHeader || track.metadata[this.state.columnHeader].includes(col.name) ) ) {
+                // confusing code here, need to check if column was used
+                if (col === 'notuse') {
                     tracks.push(track);
+                } else {
+                    if ( col.name === this.state.columnHeader || track.metadata[this.state.columnHeader].includes(col.name) ) {
+                        tracks.push(track);
+                    }
                 }
             }
         }
@@ -266,8 +275,8 @@ class App extends Component {
         if (colNum === 0) {
             colNum = 1;
         }
-        console.log(colNum);
-        document.documentElement.style.setProperty('--colNum', colNum);
+        //console.log(colNum);
+        document.documentElement.style.setProperty('--colNum', colNum+1);
     }
 
     renderRowSelection() {
@@ -313,8 +322,8 @@ class App extends Component {
         if (e.currentTarget.value === "notuse") {
             this.setState(
                 {
-                columnHeader: '',
-                columnList: []
+                columnHeader: 'notuse',
+                columnList: [{name:'--'}]
                 }
             );
         } else {
@@ -349,12 +358,10 @@ class App extends Component {
                         <div className="facet-swap">
                             <button title="swap row/column" onClick={this.swapHeader}>&#8646;</button>
                         </div>
-                        <div className="facet-column-header">{this.renderHeader(this.state.columnHeader)}</div>
-                        <div className="facet-row-header">{this.renderHeader(this.state.rowHeader)}</div>
-                        <div className="facet-table">
-                            {this.buildMatrix()}
-                            {this.setColNumber()}
-                        </div>
+                        {this.renderHeader(this.state.columnHeader)}
+                        {this.renderHeader(this.state.rowHeader)}
+                        {this.buildMatrix()}
+                        {this.setColNumber()}
                     </div>
                     <div></div>
                 </div>
