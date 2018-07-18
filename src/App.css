@@ -13,6 +13,7 @@
   border: 2px solid #f76707;
   border-radius: 5px;
   background-color: #fff4e6;
+  margin-top: 100px;
 }
 
 .facet-config {
@@ -41,11 +42,17 @@
   grid-auto-flow: column;
 }
 
+.facet-column-header > div {
+  transform-origin: 50% 50%;
+  transform: rotate(-45deg) translateX(50%);
+}
+
 .facet-row-header {
   display: grid;
   grid-template-columns: auto;
 }
 
 .facet-table {
-  grid-template-columns: var(--colNum);
+  display: grid;
+  grid-template-columns: repeat(var(--colNum), auto);
 }

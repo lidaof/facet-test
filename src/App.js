@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import axios from 'axios';
 import _ from 'lodash';
+import ReactModal from 'react-modal';
 
 const DEFAULT_ROW = 'Sample';
 const DEFAULT_COLUMN = 'Assay';
@@ -17,12 +18,23 @@ class App extends Component {
             child2ancestor: {}, // child to top most parent hash
             rowHeader: DEFAULT_ROW,
             columnHeader: DEFAULT_COLUMN,
+            showModalId: null,
+            metaKeys: [],
         };
         //this.fillMetadata = this.fillMetadata.bind(this);
         this.toggleHeader = this.toggleHeader.bind(this);
         this.renderHeader = this.renderHeader.bind(this);
         this.removeChild = this.removeChild.bind(this);
         this.swapHeader = this.swapHeader.bind(this);
+        this.buildMatrix = this.buildMatrix.bind(this);
+        this.countTracks = this.countTracks.bind(this);
+        this.setColNumber = this.setColNumber.bind(this);
+        this.handleOpenModal = this.handleOpenModal.bind(this);
+        this.handleCloseModal = this.handleCloseModal.bind(this);
+        this.handleRowChange = this.handleRowChange.bind(this);
+        this.renderRowSelection = this.renderRowSelection.bind(this);
+        this.handleColumnChange = this.handleColumnChange.bind(this);
+        this.renderColumnSelection = this.renderColumnSelection.bind(this);
     }
 
     componentDidMount() {
@@ -69,25 +81,34 @@ class App extends Component {
                 data: res.data,
                 parent2children,
                 child2ancestor,
+                metaKeys,
                 rowHeader: metaKeys[1],
                 columnHeader: metaKeys[2],
             });
         });
     }
 
+    handleOpenModal (id) {
+        this.setState({ showModalId: id });
+    }
+      
+    handleCloseModal () {
+        this.setState({ showModalId: null });
+    }
+
     toggleHeader(e) {
         const {name} = e.currentTarget;
-        console.log(name);
+        //console.log(name);
         let attrList;
         if (this.state.child2ancestor[name] === this.state.rowHeader) {
             attrList = this.state.rowList;
         } else {
             attrList = this.state.columnList;
         }
-        console.log(attrList);
+        //console.log(attrList);
         const index = _.findIndex(attrList, ['name', name]);
-        console.log(index);
-        console.log(attrList[index]);
+        //console.log(index);
+        //console.log(attrList[index]);
         const isExpanded = !attrList[index].expanded;
         const newAttr = {...attrList[index], expanded: isExpanded}
         let newList = [...attrList];
@@ -101,18 +122,19 @@ class App extends Component {
             //remove all child items, recursive
             this.removeChild(newList, name);
         }
-        console.log(newList);
+        //console.log(newList);
         if (this.state.child2ancestor[name] === this.state.rowHeader) {
             this.setState({rowList: newList});
         } else {
             this.setState({columnList: newList});
         }
-        
+        this.buildMatrix();
+        this.setColNumber();
 
     }
 
     removeChild(list, parentName){
-        console.log(list);
+        //console.log(list);
         if (this.state.parent2children[parentName]) {
             for (let item of this.state.parent2children[parentName]){
                 _.remove(list, function(n) {return n.name === item});
@@ -143,13 +165,13 @@ class App extends Component {
             }
             if (prefix) {
                 divList.push(
-                    <div key={`${element}-${idx}`}>
+                    <div key={`${element.name}-${idx}`}>
                         <button name={element.name} type="button" onClick={this.toggleHeader}>{prefix}{element.name}</button>
                     </div> 
                     );
             } else {
                 divList.push(
-                    <div key={`${element}-${idx}`}>
+                    <div key={`${element.name}-${idx}`}>
                         <div name={element.name}>{prefix}{element.name}</div>
                     </div> 
                     );
@@ -168,20 +190,34 @@ class App extends Component {
         [rowList, columnList] = [columnList, rowList];
         this.setState({rowHeader, columnHeader, rowList, columnList});
         this.buildMatrix();
+        this.setColNumber();
     }
     /**
      * build the matrix, actually list of divs, use grid to control layout
      */
     buildMatrix() {
         let divs = [];
-        for (let row of this.state.rowList) {
-            for (let col of this.state.columnList) {
-                if (row.isExpanded || col.isExpanded) {
-                    divs.push( <div key={`${row.name}-${col.name}`}></div> );
+        if (this.state.columnList.length) {
+            for (let row of this.state.rowList) {
+                for (let col of this.state.columnList) {
+                    if (row.expanded || col.expanded) {
+                        divs.push( <div key={`${row.name}-${col.name}`}></div> );
+                    } else {
+                        divs.push(<div key={`${row.name}-${col.name}`}>{this.countTracks(row, col)}</div> );
+                    }
                 }
-                divs.push(<div key={`${row.name}-${col.name}`}>{this.countTracks(row, col)}</div> );
             }
+        } else {
+            for (let row of this.state.rowList) {
+                if (row.expanded) {
+                    divs.push( <div key={`${row.name-"col"}`}></div> );
+                } else {
+                    divs.push(<div key={`${row.name}-"col"`}>{this.countTracks(row, '')}</div> );
+                }
         }
+        }
+        
+        console.log(divs);
         return divs;
     }
 
@@ -189,18 +225,107 @@ class App extends Component {
      * 
      * @param {onject} row 
      * @param {object} col 
-     * @return {number} how many tracks belong to the row and col combination
+     * @return {ReactModal} how many tracks belong to the row and col combination, and popup the track list
      */
     countTracks(row, col) {
-        let num = 0;
+        let tracks = [];
         for (let track of this.state.data){
             if (row.name === this.state.rowHeader || track.metadata[this.state.rowHeader].includes(row.name)) {
-                if (col.name === this.state.columnHeader || track.metadata[this.state.columnHeader].includes(col.name)) {
-                    num += 1;
+                if (col && ( col.name === this.state.columnHeader || track.metadata[this.state.columnHeader].includes(col.name) ) ) {
+                    tracks.push(track);
                 }
             }
         }
-        return num;
+        //console.log(tracks);
+        if (!tracks.length) {
+            return;
+        }
+        const id = `modal-${row.name}-${col.name}`;
+        return (
+            <div>
+            <button onClick={()=>this.handleOpenModal(id)}>{tracks.length}</button>
+            <ReactModal 
+               isOpen={this.state.showModalId === id}
+               contentLabel="track list"
+               ariaHideApp={false}
+               id={id}
+            >
+              <button onClick={this.handleCloseModal}>Close</button>
+              <div>
+                <ul>
+                {tracks.map(track => <li key={track.name}>{track.name}</li>)}
+                </ul>
+              </div>
+            </ReactModal>
+          </div>
+        );
+    }
+
+    setColNumber() {
+        let colNum = this.state.columnList.length;
+        if (colNum === 0) {
+            colNum = 1;
+        }
+        console.log(colNum);
+        document.documentElement.style.setProperty('--colNum', colNum);
+    }
+
+    renderRowSelection() {
+        return (
+            <label>
+          Row:
+          <select value={this.state.rowHeader} onChange={this.handleRowChange}>
+            {this.state.metaKeys
+                .filter(e => e!== this.state.columnHeader)
+                .map(e => <option key={e} value={e}>{e}</option>)
+            }
+          </select>
+        </label>
+        );
+    }
+
+    handleRowChange(e) {
+        this.setState(
+            {
+            rowHeader: e.currentTarget.value,
+            rowList: [{ name: e.currentTarget.value, expanded: false, children: this.state.parent2children[e.currentTarget.value] }]
+            }
+        );
+    }
+
+    renderColumnSelection() {
+        return (
+            <label>
+          Column:
+          <select value={this.state.columnHeader} onChange={this.handleColumnChange}>
+            {this.state.metaKeys
+                .filter(e => e!== this.state.rowHeader)
+                .map(e => <option key={e} value={e}>{e}</option>)
+            }
+            <option key="disabled" disabled>────</option>
+            <option key="notuse" value="notuse">Not use</option>
+          </select>
+        </label>
+        );
+    }
+
+    handleColumnChange(e) {
+        if (e.currentTarget.value === "notuse") {
+            this.setState(
+                {
+                columnHeader: '',
+                columnList: []
+                }
+            );
+        } else {
+            this.setState(
+                {
+                columnHeader: e.currentTarget.value,
+                columnList: [{ name: e.currentTarget.value, expanded: false, children: this.state.parent2children[e.currentTarget.value] }]
+                }
+            );
+        }
+        
     }
 
     render() {
@@ -214,10 +339,10 @@ class App extends Component {
                 <div className="facet-container">
                     <div className="facet-config">
                         <div>
-                            Row: <button>{DEFAULT_ROW}</button>
+                           {this.renderRowSelection()}
                         </div>
                         <div>
-                            Column: <button>{DEFAULT_COLUMN}</button>
+                            {this.renderColumnSelection()}
                         </div>
                     </div>
                     <div className="facet-content">
@@ -228,6 +353,7 @@ class App extends Component {
                         <div className="facet-row-header">{this.renderHeader(this.state.rowHeader)}</div>
                         <div className="facet-table">
                             {this.buildMatrix()}
+                            {this.setColNumber()}
                         </div>
                     </div>
                     <div></div>
