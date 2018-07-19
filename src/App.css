@@ -26,37 +26,10 @@
   grid-auto-flow: row dense;
 }
 
-
 .facet-content  div {
   border: 1px solid #ffa94d;
   
 }
-
-/* .facet-column-header {
-  display: grid;
-  grid-template-rows: 100%;
-  grid-auto-flow: column;
-}
-
-.facet-column-header > div {
-  transform: rotate(-45deg) translateX(50%);
-  width: 50px;
-}
-
-.facet-row-header {
-  display: grid;
-  grid-template-columns: auto;
-}
-
-.facet-row-header > div {
-  min-height: 1rem;
-} */
-
-/* 
-.facet-table > div {
-  width: 50px;
-  min-height: 1rem;
-} */
 
 .facet-swap {
   grid-column-start: 1;
