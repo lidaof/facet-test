@@ -9,11 +9,14 @@ const DEFAULT_ROW = 'Sample';
 const DEFAULT_COLUMN = 'Assay';
 const UNUSED_META_KEY = 'notused';
 
+const URL = 'https://wangftp.wustl.edu/~dli/tmp/test2.json';
+//const URL = 'https://wangftp.wustl.edu/~dli/tmp/roadmap9';
+
 class App extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            data: [],
+            tracks: [],
             rowList: [], // object contains row elements {name: 'Sample', expanded: false, children: []}
             columnList: [],
             parent2children: {},
@@ -33,21 +36,25 @@ class App extends Component {
     }
 
     async componentDidMount() {
-        const response = await axios.get('https://wangftp.wustl.edu/~dli/tmp/test2.json');
-        const tracks = response.data;
-        const allKeys = tracks.map(track => Object.keys(track.metadata));
+        const response = await axios.get(URL);
+        const allTracks = response.data;
+        const allKeys = allTracks.map(track => Object.keys(track.metadata));
         const metaKeys = _.union(...allKeys);
-
+        let tracks = []; // fix dup metadata
+        let rawtracks = []; //add raw metadata after dup remove, add is
         const parent2children = {}; // key: parent terms, value: set of [child terms]
         const child2ancestor = {};
         for (let meta of metaKeys) {
             parent2children[meta] = new Set();
             child2ancestor[meta] = meta; // add 'sample': sample as well
         }
-
-        for (let track of tracks) {
-            for (const [metaKey, metaValue] of Object.entries(track.metadata)) {
+        let i = 0;
+        for (let track of allTracks) {
+            i += 1;
+            let metadata = {};
+            for (let [metaKey, metaValue] of Object.entries(track.metadata)) {
                 if (Array.isArray(metaValue)) {
+                    metaValue = _.uniq(metaValue);
                     // array metadata, also need check length
                     if (metaValue.length > 1) {
                         // need loop over the array, constuct new key in parent2children hash
@@ -68,9 +75,41 @@ class App extends Component {
                     parent2children[metaKey].add(metaValue);
                     child2ancestor[metaValue] = metaKey;
                 }
+                metadata[metaKey] = metaValue;
             }
+            let newTrack = {...track, id: i, metadata: metadata};
+            rawtracks.push(newTrack);
         }
-
+        //console.log(rawtracks);
+        //if metadata has dup, say liver > right liver, liver, liver > left liver, a new item (liver) will be generated
+        // liver
+        //    (liver)
+        //    right liver
+        //    left liver
+        for (let track of rawtracks) {
+            let metadata = {};
+            for (let [metaKey, metaValue] of Object.entries(track.metadata)) {
+                let lastValue, newValue;
+                if (Array.isArray(metaValue)) {
+                    // array metadata
+                    lastValue = metaValue[metaValue.length - 1]
+                } else {
+                    // string metadata
+                    lastValue = metaValue;
+                }
+                if ( _.has(parent2children, lastValue) ){
+                    if (Array.isArray(metaValue)) {
+                        newValue = [...metaValue, `(${lastValue})`];
+                    } else {
+                        newValue = [...[metaValue], `(${lastValue})`];
+                    } 
+                }
+                metadata[metaKey] = newValue;
+            }
+            let newTrack = {...track, metadata: metadata};
+            tracks.push(newTrack);
+        }
+        console.log(tracks);
         this.setState({
             rowList: [{
                 name: this.state.rowHeader, expanded: false, children: parent2children[this.state.rowHeader]
@@ -78,12 +117,12 @@ class App extends Component {
             columnList: [{
                 name: this.state.columnHeader, expanded: false, children: parent2children[this.state.columnHeader]
             }],
-            data: response.data,
+            tracks,
             parent2children,
             child2ancestor,
             metaKeys,
-            rowHeader: metaKeys[1],
-            columnHeader: metaKeys[2],
+            // rowHeader: metaKeys[1],
+            // columnHeader: metaKeys[2],
         });
     }
 
@@ -194,10 +233,11 @@ class App extends Component {
      * build the matrix, actually list of divs, use grid to control layout
      */
     buildMatrix() {
+        const {columnHeader, rowList, columnList} = this.state;
         let divs = [];
-        if (this.state.columnHeader !== UNUSED_META_KEY) {
-            for (let row of this.state.rowList) {
-                for (let col of this.state.columnList) {
+        if (columnHeader !== UNUSED_META_KEY) {
+            for (let row of rowList) {
+                for (let col of columnList) {
                     if (row.expanded || col.expanded) {
                         divs.push( <div key={`${row.name}-${col.name}`}></div> );
                     } else {
@@ -206,7 +246,7 @@ class App extends Component {
                 }
             }
         } else {
-            for (let row of this.state.rowList) {
+            for (let row of rowList) {
                 if (row.expanded) {
                     divs.push( <div key={`${row.name}-col}`}></div> );
                 } else {
@@ -225,26 +265,27 @@ class App extends Component {
      * @return {ReactModal} how many tracks belong to the row and col combination, and popup the track list
      */
     countTracks(row, col) {
-        const {data, rowHeader, columnHeader, showModalId} = this.state;
-        let tracks = [];
-        for (let track of data){
+        const {tracks, rowHeader, columnHeader, showModalId} = this.state;
+        let found = [];
+        for (let track of tracks){
+            // console.log(rowHeader);
+            // console.log(track.metadata);
             if (row.name === rowHeader || track.metadata[rowHeader].includes(row.name)) {
                 // confusing code here, need to check if column was used
                 if (col === UNUSED_META_KEY) {
-                    tracks.push(track);
+                    found.push(track);
                 } else if ( col.name === columnHeader || track.metadata[columnHeader].includes(col.name) ) {
-                    tracks.push(track);
+                    found.push(track);
                 }
             }
         }
-        if (!tracks.length) {
+        if (!found.length) {
             return;
         }
-
         const id = `modal-${row.name}-${col.name}`;
         return (
         <div>
-            <button onClick={()=>this.handleOpenModal(id)}>{tracks.length}</button>
+            <button onClick={()=>this.handleOpenModal(id)}>{found.length}</button>
             <ReactModal
                isOpen={showModalId === id}
                contentLabel="track list"
@@ -254,13 +295,14 @@ class App extends Component {
                 <button onClick={this.handleCloseModal}>Close</button>
                 <div>
                     <ul>
-                        {tracks.map(track => <li key={track.name}>{track.name}</li>)}
+                        {found.map(track => <li key={track.name}>{track.name}</li>)}
                     </ul>
                 </div>
             </ReactModal>
         </div>
         );
     }
+
 
     setColNumber() {
         let colNum = Math.max(1, this.state.columnList.length);
@@ -330,8 +372,8 @@ class App extends Component {
     }
 
     render() {
-        const { data } = this.state;
-        if (!data.length) {
+        const { tracks } = this.state;
+        if (!tracks.length) {
             return <p>Loading</p>;
         } else {
             //fill in rowList and columnList
