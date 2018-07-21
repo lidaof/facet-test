@@ -10,8 +10,7 @@
 .facet-container {
   display: grid;
   grid-template-columns: auto auto 1fr;
-  background-color: #fff4e6;
-  margin-top: 100px;
+  margin-top: 150px;
 }
 
 .facet-config {
@@ -21,14 +20,15 @@
 
 .facet-content {
   display: grid;
-  grid-gap: 2px;
-  grid-template-columns: repeat(var(--colNum), 1fr);
+  /* grid-gap: 2px; */
+  grid-template-columns: repeat(var(--colNum), auto);
   grid-auto-flow: row dense;
+  grid-auto-columns: min-content;
 }
 
 .facet-content  div {
-  border: 1px solid #ffa94d;
-  
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
 }
 
 .facet-swap {
@@ -39,4 +39,32 @@
 .facet-row-header {
   grid-column-start: 1;
   grid-column-end: 2;
+}
+
+.facet-column-header {
+  transform: rotate(-90deg) translateY(100%);
+  transform-origin: left bottom 0;
+  display: inline-block;
+  width: 1rem;
+  margin: 0 3px;
+  /* min-height: 140px; */
+  white-space: nowrap;
+  /* transform: 
+  /* Magic Numbers */
+  /* translate(25px, 51px)
+  /* 45 is really 360 - 45 */
+  /* rotate(315deg); */ 
+  /* width: 30px; */
+  /* border-bottom: 1px solid #ccc;
+  padding: 5px 10px; */
+}
+
+.facet-content button {
+    background: none;
+    color: inherit;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    outline: inherit;
 }

@@ -102,14 +102,20 @@ class App extends Component {
                         newValue = [...metaValue, `(${lastValue})`];
                     } else {
                         newValue = [...[metaValue], `(${lastValue})`];
-                    } 
+                    }
+                    if (!parent2children[lastValue]) {
+                        parent2children[lastValue] = new Set();
+                    }
+                    parent2children[lastValue].add(`(${lastValue})`);
+                    metadata[metaKey] = newValue;
+                } else {
+                    metadata[metaKey] = metaValue;
                 }
-                metadata[metaKey] = newValue;
             }
             let newTrack = {...track, metadata: metadata};
             tracks.push(newTrack);
         }
-        console.log(tracks);
+        //console.log(tracks);
         this.setState({
             rowList: [{
                 name: this.state.rowHeader, expanded: false, children: parent2children[this.state.rowHeader]
@@ -182,12 +188,13 @@ class App extends Component {
     }
 
     renderHeader(attr) {
-        let attrList, rowClass;
+        let attrList, rowClass, colClass;
         if (attr === this.state.rowHeader) {
             attrList = this.state.rowList;
             rowClass = 'facet-row-header';
         } else {
             attrList = this.state.columnList;
+            colClass = 'facet-column-header';
         }
 
         let divList = [];
@@ -196,7 +203,7 @@ class App extends Component {
             if (element.children && element.children.size) {
                 prefix = element.expanded ? '⊟' : '⊞';
                 divList.push(
-                    <div key={`${element.name}-${idx}`} className={rowClass}>
+                    <div key={`${element.name}-${idx}`} className={`${rowClass} ${colClass}`}>
                         <button name={element.name} type="button" onClick={this.toggleHeader}>
                             {prefix}{element.name}
                         </button>
@@ -204,7 +211,7 @@ class App extends Component {
                 );
             } else {
                 divList.push(
-                    <div key={`${element.name}-${idx}`} className={rowClass}>
+                    <div key={`${element.name}-${idx}`} className={`${rowClass} ${colClass}`}>
                         <div name={element.name}>{prefix}{element.name}</div>
                     </div> 
                 );
@@ -254,7 +261,6 @@ class App extends Component {
                 }
             }
         }
-
         return divs;
     }
 
@@ -270,6 +276,9 @@ class App extends Component {
         for (let track of tracks){
             // console.log(rowHeader);
             // console.log(track.metadata);
+            if (!track.metadata[rowHeader]) {
+                continue;
+            }
             if (row.name === rowHeader || track.metadata[rowHeader].includes(row.name)) {
                 // confusing code here, need to check if column was used
                 if (col === UNUSED_META_KEY) {
@@ -295,14 +304,13 @@ class App extends Component {
                 <button onClick={this.handleCloseModal}>Close</button>
                 <div>
                     <ul>
-                        {found.map(track => <li key={track.name}>{track.name}</li>)}
+                        {found.map(track => <li key={track.id}>{track.name}</li>)}
                     </ul>
                 </div>
             </ReactModal>
         </div>
         );
     }
-
 
     setColNumber() {
         let colNum = Math.max(1, this.state.columnList.length);
