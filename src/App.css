@@ -8,7 +8,7 @@
 
 .facet-container {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto;
   text-align: center;
 }
 
@@ -17,13 +17,9 @@
   grid-template-columns: auto auto;
 }
 
-/* overflow still buggy when content outside of screen */
 .facet-outer {
-  display: grid;
-  grid-template-columns: auto;
-  overflow: hidden;
+  display: block;
 }
-
 
 .facet-content {
   display: grid;
@@ -31,7 +27,8 @@
   grid-template-columns: repeat(var(--colNum), auto);
   grid-auto-flow: row dense;
   grid-auto-columns: min-content;
-  margin-top: 200px;
+  margin-top: 50px;
+  overflow: hidden;
 }
 
 .facet-content  > div {
@@ -53,33 +50,37 @@
   grid-column-start: 1;
   grid-column-end: 2;
 }
-/* https://stackoverflow.com/questions/16301625/rotated-elements-in-css-that-affect-their-parents-height-correctly */
-.facet-column-header {
+
+.facet-column-header span{
   /* transform: rotate(-60deg) translateY(65%); */
-  transform: rotate(-90deg) translateY(90%);
+  /* transform: rotate(-90deg) translateY(90%);
   transform-origin: left bottom 0;
   display: inline-block;
   width: 1rem;
   margin: 3px;
+  white-space: nowrap; */
+  -webkit-writing-mode: vertical-lr;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  width: 1rem;
   white-space: nowrap;
 }
 
+.facet-column-header div {
+  -webkit-writing-mode: vertical-lr;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  width: 1rem;
+  white-space: nowrap;
+}
 div.facet-column-header {
-  border-bottom: 0;
-  border-right: 0;
-  padding-left: 3px;
+  padding-left: 2px;
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
-div.facet-column-header:before {
-  content : "";
-  position: absolute;
-  left    : 0;
-  bottom  : 0;
-  height  : 100%;
-  width   : 400%;  /* or 100px */
-  border-left:1px solid #ccc;
-  border-bottom:1px solid #ccc;
-  z-index: -1;
+.facet-column-header {
+  align-self: end;
 }
 
 .facet-content button {

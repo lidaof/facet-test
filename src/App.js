@@ -206,7 +206,9 @@ class App extends Component {
                 divList.push(
                     <div key={`${element.name}-${idx}`} className={`${rowClass} ${colClass}`}>
                         <button name={element.name} type="button" onClick={this.toggleHeader} className={expandClass}>
-                            {prefix}{element.name}
+                            <span>
+                                {prefix}{element.name}
+                            </span>
                         </button>
                     </div>
                 );
@@ -401,7 +403,6 @@ class App extends Component {
                             {this.setColNumber()}
                         </div>
                     </div>
-                    <div></div>
                 </div>
             );
         }
