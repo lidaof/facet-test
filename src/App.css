@@ -2,15 +2,15 @@
   --colNum: 2;
 }
 
-.App {
-  text-align: center;
+* {
   box-sizing: border-box;
 }
 
 .facet-container {
   display: grid;
   grid-template-columns: auto auto 1fr;
-  margin-top: 150px;
+  text-align: center;
+  overflow: hidden;
 }
 
 .facet-config {
@@ -20,43 +20,58 @@
 
 .facet-content {
   display: grid;
-  /* grid-gap: 2px; */
+  grid-gap: 2px;
   grid-template-columns: repeat(var(--colNum), auto);
   grid-auto-flow: row dense;
   grid-auto-columns: min-content;
+  margin-top: 150px;
 }
 
-.facet-content  div {
+.facet-content  > div {
   border-bottom: 1px solid #ccc;
   border-right: 1px solid #ccc;
+  position: relative;
 }
 
 .facet-swap {
   grid-column-start: 1;
   grid-column-end: 2;
+  background-color: #4CAF50;
+  color: #ffffff;
+  border-color: #4CAF50;
+  cursor: pointer;
 }
 
 .facet-row-header {
   grid-column-start: 1;
   grid-column-end: 2;
 }
-
+/* https://stackoverflow.com/questions/16301625/rotated-elements-in-css-that-affect-their-parents-height-correctly */
 .facet-column-header {
-  transform: rotate(-90deg) translateY(100%);
+  transform: rotate(-60deg) translateY(65%);
   transform-origin: left bottom 0;
   display: inline-block;
   width: 1rem;
-  margin: 0 3px;
-  /* min-height: 140px; */
+  margin: 3px;
   white-space: nowrap;
-  /* transform: 
-  /* Magic Numbers */
-  /* translate(25px, 51px)
-  /* 45 is really 360 - 45 */
-  /* rotate(315deg); */ 
-  /* width: 30px; */
-  /* border-bottom: 1px solid #ccc;
-  padding: 5px 10px; */
+}
+
+div.facet-column-header {
+  border-bottom: 0;
+  border-right: 0;
+  padding-left: 3px;
+}
+
+div.facet-column-header:before {
+  content : "";
+  position: absolute;
+  left    : 0;
+  bottom  : 0;
+  height  : 100%;
+  width   : 400%;  /* or 100px */
+  border-left:1px solid #ccc;
+  border-bottom:1px solid #ccc;
+  z-index: -1;
 }
 
 .facet-content button {
@@ -67,4 +82,36 @@
     font: inherit;
     cursor: pointer;
     outline: inherit;
+}
+
+button.expanded {
+  font-style: italic;
+  color: #777;
+}
+
+.facet-item:hover:after {
+  content: '';  
+  height: 10000px;
+  left: 0;
+  position: absolute;  
+  top: -5000px;
+  width: 100%;
+  z-index: -1;
+}
+
+.facet-item:hover:after {
+  background-color: #ffa;
+}
+
+.facet-item:hover:before {
+  content: '';  
+  height: 100%;
+  left: -5000px;
+  position: absolute;  
+  width: 10000px;
+  z-index: -1;
+}
+
+.facet-item:hover:before {
+  background-color: #ffa;
 }

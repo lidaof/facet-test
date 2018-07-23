@@ -188,7 +188,7 @@ class App extends Component {
     }
 
     renderHeader(attr) {
-        let attrList, rowClass, colClass;
+        let attrList, rowClass, colClass, expandClass;
         if (attr === this.state.rowHeader) {
             attrList = this.state.rowList;
             rowClass = 'facet-row-header';
@@ -202,9 +202,10 @@ class App extends Component {
             let prefix = '';
             if (element.children && element.children.size) {
                 prefix = element.expanded ? '⊟' : '⊞';
+                expandClass = element.expanded ? 'expanded' : '';
                 divList.push(
                     <div key={`${element.name}-${idx}`} className={`${rowClass} ${colClass}`}>
-                        <button name={element.name} type="button" onClick={this.toggleHeader}>
+                        <button name={element.name} type="button" onClick={this.toggleHeader} className={expandClass}>
                             {prefix}{element.name}
                         </button>
                     </div>
@@ -248,7 +249,7 @@ class App extends Component {
                     if (row.expanded || col.expanded) {
                         divs.push( <div key={`${row.name}-${col.name}`}></div> );
                     } else {
-                        divs.push(<div key={`${row.name}-${col.name}`}>{this.countTracks(row, col)}</div> );
+                        divs.push(<div key={`${row.name}-${col.name}`} className="facet-item">{this.countTracks(row, col)}</div> );
                     }
                 }
             }
@@ -257,7 +258,7 @@ class App extends Component {
                 if (row.expanded) {
                     divs.push( <div key={`${row.name}-col}`}></div> );
                 } else {
-                    divs.push(<div key={`${row.name}-col`}>{this.countTracks(row, UNUSED_META_KEY)}</div> );
+                    divs.push(<div key={`${row.name}-col`} className="facet-item">{this.countTracks(row, UNUSED_META_KEY)}</div> );
                 }
             }
         }
@@ -294,7 +295,7 @@ class App extends Component {
         const id = `modal-${row.name}-${col.name}`;
         return (
         <div>
-            <button onClick={()=>this.handleOpenModal(id)}>{found.length}</button>
+            <button onClick={()=>this.handleOpenModal(id)}> 0/{found.length} </button>
             <ReactModal
                isOpen={showModalId === id}
                contentLabel="track list"
@@ -392,9 +393,7 @@ class App extends Component {
                         <div>{this.renderHeaderSelection(true)}</div>
                     </div>
                     <div className="facet-content">
-                        <div className="facet-swap">
-                            <button title="swap row/column" onClick={this.swapHeader}>&#8646;</button>
-                        </div>
+                        <div className="facet-swap" title="swap row/column" onClick={this.swapHeader}>&#8646;</div>
                         {this.renderHeader(this.state.columnHeader)}
                         {this.renderHeader(this.state.rowHeader)}
                         {this.buildMatrix()}
